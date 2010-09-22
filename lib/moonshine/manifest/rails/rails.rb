@@ -142,8 +142,18 @@ module Moonshine::Manifest::Rails::Rails
         :command => "rm -rf /home/#{configuration[:user]}/.bundle/ruby/1.8/cache/",
         :before => exec("bundle install")
       
+      # Create a symlink for bundler, related to the --deployment flag
+      shared_dir = "#{configuration[:deploy_to]}/shared/bundle"
+      bundle_dir = "#{rails_root}/vendor/bundle"
+
+      exec "symlink_vendor_bundle_directory",
+        :command => "mkdir -p #{shared_dir} && rm -rf #{bundle_dir} && ln -nfs #{shared_dir} #{bundle_dir}",
+        :before => exec("bundle install"),
+        :user => configuration[:user]
+
+      # Use --deployment flag, see: http://github.com/carlhuda/bundler/issues/issue/485
       exec 'bundle install',
-        :command => "bundle install",
+        :command => "bundle install --deployment",
         :cwd => rails_root,
         :before => exec('rails_gems'),
         :require => file('/etc/gemrc'),
